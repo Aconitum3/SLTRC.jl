@@ -8,6 +8,9 @@ using Zygote
 Fname(F) = typeof(F) |> nameof |> sym -> eval(Core.eval(Distributions,sym))
 
 include("NumericalIntegration.jl")
+
+Default_NumericalIntegration = DETrapezoidalRule
+
 include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
