@@ -13,6 +13,7 @@ function SimpsonRule(f::Function,I::ClosedInterval{T₁};N::T₂=2^6,kwargs...) 
 end
 
 function TrapezoidalRule(f::Function,I::ClosedInterval{T₁};N::T₂=2^6,kwargs...) where {T₁<:Real, T₂<:Integer} 
+    a,b = I.left, I.right
     x = a:(b-a)/(N-1):b
     y = f.(x)
     J = 0*f(a).^0
