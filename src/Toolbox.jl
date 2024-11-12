@@ -34,3 +34,14 @@ function ratio(FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};Numerica
         return output
     end
 end
+
+function positive_constraint(F::D) where D<:Distribution{Univariate,Continuous} 
+    res = Dict(
+        :Exponential => [true],
+        :Gamma => [true,true],
+        :LogNormal => [false,true],
+        :Uniform => [false,false],
+        :Weibull => [true,true],
+    )
+    return res[Symbol(Fname(F))]
+end

@@ -8,11 +8,11 @@ using Zygote
 Fname(F) = typeof(F) |> nameof |> sym -> eval(Core.eval(Distributions,sym))
 
 include("NumericalIntegration.jl")
-include("Optimizer.jl")
 include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
 include("Toolbox.jl")
+include("Optimizer.jl")
 include("Sampler.jl")
 
 export CompleteData, RightCensoredData, StrictlyLeftTruncatedData, WeaklyLeftTruncatedData, StrictlyLeftTruncatedRightCensoredData, WeaklyLeftTruncatedRightCensoredData, LeftTruncatedRightCensoredDataset
@@ -21,6 +21,6 @@ export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
 export ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
 export SimpsonRule, DESimpsonRule
 export ratio, sampling
-export Newton, Exponentialize
+export Newton, MLE, MLE_Alternative
 
 end
