@@ -9,7 +9,7 @@ Fname(F) = typeof(F) |> nameof |> sym -> eval(Core.eval(Distributions,sym))
 
 include("NumericalIntegration.jl")
 
-Default_NumericalIntegration = DETrapezoidalRule
+const Default_NumericalIntegration = DETrapezoidalRule
 
 include("Struct.jl")
 include("Likelihood/Common.jl")
@@ -22,7 +22,7 @@ export CompleteData, RightCensoredData, StrictlyLeftTruncatedData, WeaklyLeftTru
 export C, logC, ∇C, ∇²C, ∇logC, ∇ᵏlogC, ∇xC, ∇yC, ∇²xC, ∇²yC, ∇xlogC, ∇ylogC, ∇ᵏxlogC, ∇ᵏylogC
 export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
 export ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
-export SimpsonRule, DESimpsonRule
+export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
 export Newton, MLE, MLE_Alternative
 
