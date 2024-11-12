@@ -21,7 +21,7 @@ include("Sampler.jl")
 export CompleteData, RightCensoredData, StrictlyLeftTruncatedData, WeaklyLeftTruncatedData, StrictlyLeftTruncatedRightCensoredData, WeaklyLeftTruncatedRightCensoredData, LeftTruncatedRightCensoredDataset
 export C, logC, ∇C, ∇²C, ∇logC, ∇ᵏlogC, ∇xC, ∇yC, ∇²xC, ∇²yC, ∇xlogC, ∇ylogC, ∇ᵏxlogC, ∇ᵏylogC
 export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
-export ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
+export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
 export Newton, MLE, MLE_Alternative

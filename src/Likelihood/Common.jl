@@ -176,7 +176,6 @@ function logp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::D₁,FY::D₂,Obse
 end
 
 function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
-    cL, cR = ObservationInterval.left, ObservationInterval.right
     FXname, FYname = Fname(FX), Fname(FY)
     Xprms, Yprms = params(FX), params(FY)
     len_Xprms, len_Yprms =  length(Xprms), length(Yprms)
@@ -188,7 +187,6 @@ function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂
 end
 
 function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
-    cL, cR = ObservationInterval.left, ObservationInterval.right
     FXname = Fname(FX)
     Xprms = params(FX) |> collect
     
@@ -198,7 +196,6 @@ function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D�
 end
 
 function ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
-    cL, cR = ObservationInterval.left, ObservationInterval.right
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     
@@ -281,6 +278,27 @@ function ∇ᵏylogp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::D₁,FY::D�
     ∇logp̃ = - NumericalIntegration(v -> gradient(θ -> pdf(FX,v)*cdf(FYname(θ...),cR-v),Yprms)[1],Interval(0.0,cL)) / p̃_val
     ∇²logp̃ = - NumericalIntegration(v -> hessian(θ -> pdf(FX,v)*cdf(FYname(θ...),cR-v),Yprms),Interval(0.0,cL)) / p̃_val - ∇logp̃*∇logp̃'
     return ∇logp̃, ∇²logp̃
+end
+
+function loglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
+    ObservationInterval = d.ObservationInterval
+    data = d.data
+    
+    indexes_NOT_StrictlyLeftTruncatedRightCensored = findall(v -> (!isa)(v,StrictlyLeftTruncatedRightCensoredData),data)
+    n_StrictlyLeftTruncatedRightCensored = length(data) - length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
+
+    ∑logp̃ = 0.0
+    
+    if n_StrictlyLeftTruncatedRightCensored != 0
+        ∑logp̃ += n_StrictlyLeftTruncatedRightCensored * logp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
+    end
+    
+    for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
+        ∑logp̃ += logp̃(data[i],FX,FY,ObservationInterval;kwargs...)
+    end
+
+    loglikelihood = ∑logp̃ - length(data) * logC(FX,FY,ObservationInterval;kwargs...)
+    return loglikelihood
 end
 
 function ∇ᵏloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
