@@ -61,7 +61,7 @@ function Newton(B::Vector{Bool},∇ᵏf::Function,init::Vector{T};kwargs...) whe
     return (;solution=h.(B,res.solution), status=res.status, solution_path=map(θ -> h.(B,θ),res.solution_path))
 end
 
-function RighCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_itr::I=10000,ϵ::T=1e-4) where {I<:Integer, T<:Real}
+function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_itr::I=10000,ϵ::T=1e-4) where {I<:Integer, T<:Real}
     cR = dataset.ObservationInterval.right
     index_complete = findall(v -> isa(v,CompleteData),dataset.data)
     index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
@@ -107,17 +107,17 @@ function RighCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_i
     return (;solution=[resX.solution,resY.solution])
 end
 
-function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
+function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;logging::Bool=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
     Bool_positive_constraints = [positive_constraint(FX);positive_constraint(FY)]
     θ_init = [params(FX)...;params(FY)...]
     FXname, FYname = Fname(FX), Fname(FY)
     len_Xprms, len_Yprms = length(params(FX)), length(params(FY))
     
-    res = Newton(Bool_positive_constraints,θ -> ∇ᵏloglikelihood(dataset,FXname(θ[1:len_Xprms]...),FYname(θ[end-len_Yprms+1:end]...);kwargs...),θ_init;kwargs...)
+    res = Newton(Bool_positive_constraints,θ -> ∇ᵏloglikelihood(dataset,FXname(θ[1:len_Xprms]...),FYname(θ[end-len_Yprms+1:end]...);kwargs...),θ_init;logging=logging,kwargs...)
     return (;solution=(FXname(res.solution[1:len_Xprms]...),FYname(res.solution[end-len_Yprms+1:end]...)),status=res.status,solution_path=res.solution_path)
 end
 
-function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};kwargs...) where T<:Real
+function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};logging::Bool=false,kwargs...) where T<:Real
     
     # estimate initial θX,θY
     
@@ -126,16 +126,18 @@ function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibu
 
     RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
     
-    res = RighCensoredWeibullMLE(RightCensoredDataset;kwargs...)
+    res = RightCensoredWeibullMLE(RightCensoredDataset)
     θX = params(res.solution[1]) |> collect
     θY = params(res.solution[2]) |> collect
     θ_init = [θX;θY]
-
-    res = Newton([true,true,true,true],θ -> ∇ᵏloglikelihood(dataset,Weibull(θ[1:2]...),Weibull(θ[3:4]...);kwargs...),θ_init;kwargs...)
+    if logging
+        @info "initial values" res.solution
+    end
+    res = Newton([true,true,true,true],θ -> ∇ᵏloglikelihood(dataset,Weibull(θ[1:2]...),Weibull(θ[3:4]...);kwargs...),θ_init;logging=logging,kwargs...)
     return (;solution=(Weibull(res.solution[1:2]...),Weibull(res.solution[3:4]...)),status=res.status,solution_path=res.solution_path)
 end
 
-function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;ϵ=1e-4,alt_max_itr=100,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
+function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;ϵ=1e-4,alt_max_itr=100,logging::Bool=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
     Bool_X_positive_constraints = positive_constraint(FX)
     Bool_Y_positive_constraints = positive_constraint(FY)
     θX_init, θY_init = params(FX) |> collect, params(FY) |> collect
@@ -161,6 +163,10 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY:
         return (;solution=(FXname(θX...),FYname(θY...)), status=res.status)
     end
     
+    if logging
+        @info "initial values" [FXname(θX...),FYname(θY...)]
+    end
+
     θX_path = zeros(alt_max_itr+1,len_Xprms)
     θY_path = zeros(alt_max_itr+1,len_Yprms)
     θX_path[1,:] = θX
@@ -184,11 +190,16 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY:
         end
         θX_path[i,:] = θX
         θY_path[i,:] = θY
+
+        if logging
+            @info "$i :" [FXname(θX...),FYname(θY...)]
+        end
+
     end
     return (;solution=(FXname(θX...),FYname(θY...)),status=:reached_max_iteration,solution_path=[θX_path θY_path])
 end
 
-function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};ϵ=1e-4,alt_max_itr=100,kwargs...) where T<:Real
+function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};ϵ=1e-4,alt_max_itr=100,logging::Bool=false,kwargs...) where T<:Real
     θX_init, θX_init = params(FX) |> collect, params(FY) |> collect
 
     index_complete = findall(v -> isa(v,CompleteData),dataset.data)
@@ -198,11 +209,14 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{
     θX = θX_init
     RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
     
-    res = RighCensoredWeibullMLE(RightCensoredDataset;kwargs...)
+    res = RightCensoredWeibullMLE(RightCensoredDataset)
     θX = params(res.solution[1]) |> collect
     θY = params(res.solution[2]) |> collect
-    @info "1 :" θX θY 
     
+    if logging
+        @info "initial values" res.solution 
+    end
+
     θX_path = zeros(alt_max_itr+1,2)
     θY_path = zeros(alt_max_itr+1,2)
     θX_path[1,:] = θX
@@ -215,8 +229,7 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{
         θX = resX.solution
         resY = Newton([true,true],θ -> ∇ᵏyloglikelihood(dataset,Weibull(θX...),Weibull(θ...);kwargs...),θY;kwargs...)
         θY = resY.solution
-        @info "$i :" θX θY
-
+        
         if norm(θX_path[i-1,:] - θX) < ϵ && norm(θY_path[i-1,:] - θY) < ϵ
             hess = ∇ᵏloglikelihood(dataset,Weibull(θX...),Weibull(θY...))[2]
             #@info "Hessian" hess
@@ -228,6 +241,10 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{
         end
         θX_path[i,:] = θX
         θY_path[i,:] = θY
+
+        if logging
+            @info "$i :" [Weibull(θX...),Weibull(θY...)]
+        end
     end
     return (;solution=(Weibull(θX...),Weibull(θY...)),status=:reached_max_iteration,solution_path=[θX_path θY_path])
 end
