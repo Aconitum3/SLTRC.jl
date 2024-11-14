@@ -113,3 +113,25 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{
     end
     return (;solution=(Weibull(θX...),Weibull(θY...)),status=:reached_max_iteration,solution_path=[θX_path θY_path])
 end
+
+function ConditionalMLE(dataset::LeftTruncatedRightCensoredDataset,FY::Weibull;logging::Bool=false,kwargs...)
+    # estimate initial θY
+    
+    index_complete = findall(v -> isa(v,CompleteData),dataset.data)
+    index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
+
+    RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
+    
+    res = RightCensoredWeibullMLE(RightCensoredDataset)
+    θ_init = params(res.solution[2]) |> collect
+    
+    
+    index_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), dataset.data)
+    if length(index_NOT_StrictlyLeftTruncated) != length(dataset.data) 
+        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
+        dataset = LeftTruncatedRightCensoredDataset(dataset.data[index_NOT_StrictlyLeftTruncated], dataset.ObservationInterval)
+    end
+      
+    res = Newton([true,true],θ -> ∇ᵏconditionalloglikelihood(dataset,Weibull(θ...);kwargs...),θ_init;logging=logging,kwargs...)
+    return (;solution=(Weibull(res.solution...)),status=res.status,solution_path=res.solution_path)
+end

@@ -132,3 +132,18 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY:
     end
     return (;solution=(FXname(θX...),FYname(θY...)),status=:reached_max_iteration,solution_path=[θX_path θY_path])
 end
+
+function ConditionalMLE(dataset::LeftTruncatedRightCensoredDataset,FY::D;logging::Bool=false,kwargs...) where D<:Distribution{Univariate,Continuous}
+    Bool_positive_constraints = positive_constraint(FY)
+    θ_init = params(FY) |> collect
+    FYname = Fname(FY)
+    
+    index_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), dataset.data)
+    if length(index_NOT_StrictlyLeftTruncated) != length(dataset.data) 
+        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
+        dataset = LeftTruncatedRightCensoredDataset(dataset.data[index_NOT_StrictlyLeftTruncated], dataset.ObservationInterval)
+    end
+      
+    res = Newton(Bool_positive_constraints,θ -> ∇ᵏconditionalloglikelihood(dataset,FYname(θ...);kwargs...),θ_init;logging=logging,kwargs...)
+    return (;solution=(FYname(res.solution...)),status=res.status,solution_path=res.solution_path)
+end

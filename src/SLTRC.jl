@@ -27,6 +27,6 @@ export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikel
 export conditionalloglikelihood, ∇ᵏconditionalloglikelihood
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
-export Newton, MLE, MLE_Alternative
+export Newton, MLE, MLE_Alternative, ConditionalMLE
 
 end
