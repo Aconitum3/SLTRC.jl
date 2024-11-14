@@ -15,8 +15,9 @@ include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
 include("Toolbox.jl")
-include("Optimizer/OptimizerBase.jl")
-include("Optimizer/OptimizerWeibull.jl")
+include("Optimizer/Newton.jl")
+include("Optimizer/MLEBase.jl")
+include("Optimizer/MLEWeibull.jl")
 include("Sampler.jl")
 
 export Interval
