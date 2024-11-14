@@ -13,7 +13,6 @@ function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_
         x̄ = sum(log.(t).*δ)/d
         m,η = zeros(2)
         m₀ = 1/(log(maximum(t))-x̄)
-        
         h(m) = sum(t.^m.*log.(t))/sum(t.^m) - 1/m - x̄
         
         function ∇h(m)
@@ -123,6 +122,9 @@ function ConditionalMLE(dataset::LeftTruncatedRightCensoredDataset,FY::Weibull;l
     RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
     
     res = RightCensoredWeibullMLE(RightCensoredDataset)
+    if logging
+        @info "initial values" res.solution 
+    end
     θ_init = params(res.solution[2]) |> collect
     
     
