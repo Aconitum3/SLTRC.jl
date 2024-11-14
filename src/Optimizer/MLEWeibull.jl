@@ -45,19 +45,22 @@ end
 
 function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};logging::Bool=false,kwargs...) where T<:Real
     
-    # estimate initial θX,θY
-    
-    index_complete = findall(v -> isa(v,CompleteData),dataset.data)
-    index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
+    θ_init = [params(FX)...;params(FY)...]
+    if FX == Weibull() && FY == Weibull()
+        # estimate initial θX,θY
+        
+        index_complete = findall(v -> isa(v,CompleteData),dataset.data)
+        index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
 
-    RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
-    
-    res = RightCensoredWeibullMLE(RightCensoredDataset)
-    θX = params(res.solution[1]) |> collect
-    θY = params(res.solution[2]) |> collect
-    θ_init = [θX;θY]
+        RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
+        
+        res = RightCensoredWeibullMLE(RightCensoredDataset)
+        θX = params(res.solution[1]) |> collect
+        θY = params(res.solution[2]) |> collect
+        θ_init = [θX;θY]
+    end
     if logging
-        @info "initial values" res.solution
+        @info "initial values" θ_init
     end
     res = Newton([true,true,true,true],θ -> ∇ᵏloglikelihood(dataset,Weibull(θ[1:2]...),Weibull(θ[3:4]...);kwargs...),θ_init;logging=logging,kwargs...)
     return (;solution=(Weibull(res.solution[1:2]...),Weibull(res.solution[3:4]...)),status=res.status,solution_path=res.solution_path)
@@ -114,18 +117,22 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{
 end
 
 function ConditionalMLE(dataset::LeftTruncatedRightCensoredDataset,FY::Weibull;logging::Bool=false,kwargs...)
-    # estimate initial θY
-    
-    index_complete = findall(v -> isa(v,CompleteData),dataset.data)
-    index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
+    θ_init = params(FY) |> collect
+    if FY == Weibull()
+        # estimate initial θX,θY
+        
+        index_complete = findall(v -> isa(v,CompleteData),dataset.data)
+        index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
 
-    RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
-    
-    res = RightCensoredWeibullMLE(RightCensoredDataset)
-    if logging
-        @info "initial values" res.solution 
+        RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
+        
+        res = RightCensoredWeibullMLE(RightCensoredDataset)
+        θ_init = params(res.solution[2]) |> collect
     end
-    θ_init = params(res.solution[2]) |> collect
+    
+    if logging
+        @info "initial values" θ_init 
+    end
     
     
     index_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), dataset.data)
