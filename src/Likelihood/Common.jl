@@ -220,7 +220,7 @@ function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncate
     return ∇logp̃, ∇²logp̃
 end
 
-function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏlogp̃x(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D,ObservationInterval::ClosedInterval{T};kwargs...) where {D<:Distribution{Univariate,Continuous},T<:Real}
     FXname = Fname(FX)
     Xprms = params(FX) |> collect
     
@@ -238,8 +238,11 @@ function ∇ᵏlogp̃y(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncat
     return ∇logp̃, ∇²logp̃
 end
 
+∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},
+    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogp̃x(d,FY,ObservationInterval;kwargs...)
+
 ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},
-    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogpy(d,FY,ObservationInterval;kwargs...)
+    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogp̃y(d,FY,ObservationInterval;kwargs...)
 
 function ∇ᵏlogp̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     cL = ObservationInterval.left
