@@ -23,6 +23,7 @@ export CompleteData, RightCensoredData, StrictlyLeftTruncatedData, WeaklyLeftTru
 export C, logC, ∇C, ∇²C, ∇logC, ∇ᵏlogC, ∇xC, ∇yC, ∇²xC, ∇²yC, ∇xlogC, ∇ylogC, ∇ᵏxlogC, ∇ᵏylogC
 export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
 export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
+export conditionalloglikelihood, ∇ᵏconditionalloglikelihood
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
 export Newton, MLE, MLE_Alternative

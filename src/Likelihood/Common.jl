@@ -139,11 +139,11 @@ function p̃(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,Ob
     return pdf(FX,d.install) * pdf(FY,d.failure-d.install)
 end
 
-function p̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return pdf(FX,d.install)
 end
 
-function p̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return pdf(FY,d.failure - d.install)
 end
 
@@ -152,11 +152,11 @@ function p̃(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX
     return pdf(FX,d.install) * ccdf(FY,cR-d.install)
 end
 
-function p̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return pdf(FX,d.install)
 end
 
-function p̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     cR = ObservationInterval.right
     return ccdf(FY,cR-d.install)
 end
@@ -176,24 +176,24 @@ function logp̃(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂
     return logpdf(FX,d.install) + logpdf(FY,d.failure-d.install)
 end
 
-function logp̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return logpdf(FX,d.install)
 end
 
-function logp̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return logpdf(FY,d.failure-d.install)
 end
 
-function logp̃(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     cR = ObservationInterval.right
     return logpdf(FX,d.install) + logccdf(FY,cR-d.install)
 end
 
-function logp̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     return logpdf(FX,d.install)
 end
 
-function logp̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous},T<:Real}
     cR = ObservationInterval.right
     return logccdf(FY,cR-d.install)
 end
@@ -224,19 +224,22 @@ function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncat
     FXname = Fname(FX)
     Xprms = params(FX) |> collect
     
-    ∇logp̃ = gradient(θ -> logp̃x(d,FXname(θ...),FY,ObservationInterval), Xprms)[1]
-    ∇²logp̃ = hessian(θ -> logp̃x(d,FXname(θ...),FY,ObservationInterval), Xprms)
+    ∇logp̃ = gradient(θ -> logp̃x(d,FXname(θ...),ObservationInterval), Xprms)[1]
+    ∇²logp̃ = hessian(θ -> logp̃x(d,FXname(θ...),ObservationInterval), Xprms)
     return ∇logp̃, ∇²logp̃
 end
 
-function ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏlogp̃y(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FY::D,ObservationInterval::ClosedInterval{T};kwargs...) where {D<:Distribution{Univariate,Continuous},T<:Real}
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     
-    ∇logp̃ = gradient(θ -> logp̃y(d,FX,FYname(θ...),ObservationInterval), Yprms)[1]
-    ∇²logp̃ = hessian(θ -> logp̃y(d,FX,FYname(θ...),ObservationInterval), Yprms)
+    ∇logp̃ = gradient(θ -> logp̃y(d,FYname(θ...),ObservationInterval), Yprms)[1]
+    ∇²logp̃ = hessian(θ -> logp̃y(d,FYname(θ...),ObservationInterval), Yprms)
     return ∇logp̃, ∇²logp̃
 end
+
+∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},
+    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏylogp(d,FY,ObservationInterval;kwargs...)
 
 function ∇ᵏlogp̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     cL = ObservationInterval.left
@@ -389,4 +392,52 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
 
     ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
     return ∇ᵏloglikelihood
+end
+
+function conditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwargs...) where D<:Distribution{Univariate,Continuous}
+    ObservationInterval = d.ObservationInterval
+    cL = ObservationInterval.left
+    data = d.data
+    
+    indexes_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), data)
+    if length(indexes_NOT_StrictlyLeftTruncated) != length(data)
+        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
+    end
+
+    conditionalloglikelihood = 0.0
+    
+    for i in indexes_NOT_StrictlyLeftTruncated
+        conditionalloglikelihood += logp̃y(data[i],FY,ObservationInterval;kwargs...)
+        if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
+            conditionalloglikelihood -= logccdf(FY,cL - data[i].install)
+        end
+    end
+
+    return conditionalloglikelihood
+end
+
+function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwargs...) where D<:Distribution{Univariate,Continuous}
+    ObservationInterval = d.ObservationInterval
+    cL = ObservationInterval.left
+    data = d.data
+
+    indexes_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), data)
+    if length(indexes_NOT_StrictlyLeftTruncated) != length(data)
+        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
+    end
+
+    FYname = Fname(FY)
+    Yprms = params(FY) |> collect
+    len_prms = length(Yprms)
+    ∇ᵏconditionalloglikelihood = (zeros(len_prms), zeros(len_prms,len_prms))
+     
+    for i in indexes_NOT_StrictlyLeftTruncated
+        ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .+ ∇ᵏlogp̃y(data[i],FY,ObservationInterval;kwargs...)
+        if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
+            τ = cL - data[i].install
+            ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .- ( gradient(θ -> logccdf(FYname(θ...), τ), Yprms)[1], hessian(θ -> logccdf(FYname(θ...), τ), Yprms) )
+        end
+    end
+
+    return ∇ᵏconditionalloglikelihood
 end
