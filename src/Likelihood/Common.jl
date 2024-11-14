@@ -239,7 +239,7 @@ function ∇ᵏlogp̃y(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncat
 end
 
 ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},
-    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogp̃x(d,FY,ObservationInterval;kwargs...)
+    FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogp̃x(d,FX,ObservationInterval;kwargs...)
 
 ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},
     FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real} = ∇ᵏlogp̃y(d,FY,ObservationInterval;kwargs...)
