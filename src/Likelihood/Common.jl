@@ -135,13 +135,30 @@ function ∇ylogC(FX::D₁ ,FY::D₂,ObservationInterval::ClosedInterval{T};kwar
     return ∇logC
 end
 
-function p̃(d::CompleteData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     return pdf(FX,d.install) * pdf(FY,d.failure-d.install)
 end
 
-function p̃(d::RightCensoredData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function p̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return pdf(FX,d.install)
+end
+
+function p̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return pdf(FY,d.failure - d.install)
+end
+
+function p̃(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     cR = ObservationInterval.right
     return pdf(FX,d.install) * ccdf(FY,cR-d.install)
+end
+
+function p̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return pdf(FX,d.install)
+end
+
+function p̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    cR = ObservationInterval.right
+    return ccdf(FY,cR-d.install)
 end
 
 function p̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration::Function=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
@@ -155,13 +172,30 @@ function p̃(d::StrictlyLeftTruncatedRightCensoredData,FX::D₁,FY::D₂,Observa
     return cdf(FX,cL) - NumericalIntegration(v -> pdf(FX,v)*cdf(FY,cR-v),Interval(0.0,cL))
 end
 
-function logp̃(d::CompleteData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     return logpdf(FX,d.install) + logpdf(FY,d.failure-d.install)
 end
 
-function logp̃(d::RightCensoredData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function logp̃x(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return logpdf(FX,d.install)
+end
+
+function logp̃y(d::Union{CompleteData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return logpdf(FY,d.failure-d.install)
+end
+
+function logp̃(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     cR = ObservationInterval.right
     return logpdf(FX,d.install) + logccdf(FY,cR-d.install)
+end
+
+function logp̃x(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    return logpdf(FX,d.install)
+end
+
+function logp̃y(d::Union{RightCensoredData,WeaklyLeftTruncatedData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T}) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+    cR = ObservationInterval.right
+    return logccdf(FY,cR-d.install)
 end
 
 function logp̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration::Function=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
@@ -175,7 +209,7 @@ function logp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::D₁,FY::D₂,Obse
     return cdf(FX,cL) - NumericalIntegration(v -> pdf(FX,v)*cdf(FY,cR-v),Interval(0.0,cL)) |> log
 end
 
-function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     FXname, FYname = Fname(FX), Fname(FY)
     Xprms, Yprms = params(FX), params(FY)
     len_Xprms, len_Yprms =  length(Xprms), length(Yprms)
@@ -186,21 +220,21 @@ function ∇ᵏlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂
     return ∇logp̃, ∇²logp̃
 end
 
-function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏxlogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     FXname = Fname(FX)
     Xprms = params(FX) |> collect
     
-    ∇logp̃ = gradient(θ -> logp̃(d,FXname(θ...),FY,ObservationInterval), Xprms)[1]
-    ∇²logp̃ = hessian(θ -> logp̃(d,FXname(θ...),FY,ObservationInterval), Xprms)
+    ∇logp̃ = gradient(θ -> logp̃x(d,FXname(θ...),FY,ObservationInterval), Xprms)[1]
+    ∇²logp̃ = hessian(θ -> logp̃x(d,FXname(θ...),FY,ObservationInterval), Xprms)
     return ∇logp̃, ∇²logp̃
 end
 
-function ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏylogp̃(d::Union{CompleteData,RightCensoredData,WeaklyLeftTruncatedData,WeaklyLeftTruncatedRightCensoredData},FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     
-    ∇logp̃ = gradient(θ -> logp̃(d,FX,FYname(θ...),ObservationInterval), Yprms)[1]
-    ∇²logp̃ = hessian(θ -> logp̃(d,FX,FYname(θ...),ObservationInterval), Yprms)
+    ∇logp̃ = gradient(θ -> logp̃y(d,FX,FYname(θ...),ObservationInterval), Yprms)[1]
+    ∇²logp̃ = hessian(θ -> logp̃y(d,FX,FYname(θ...),ObservationInterval), Yprms)
     return ∇logp̃, ∇²logp̃
 end
 
