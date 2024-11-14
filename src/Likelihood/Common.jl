@@ -402,14 +402,9 @@ function conditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwa
     cL = ObservationInterval.left
     data = d.data
     
-    indexes_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), data)
-    if length(indexes_NOT_StrictlyLeftTruncated) != length(data)
-        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
-    end
-
     conditionalloglikelihood = 0.0
     
-    for i in indexes_NOT_StrictlyLeftTruncated
+    for i in 1:length(data)
         conditionalloglikelihood += logp̃y(data[i],FY,ObservationInterval;kwargs...)
         if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
             conditionalloglikelihood -= logccdf(FY,cL - data[i].install)
@@ -419,22 +414,18 @@ function conditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwa
     return conditionalloglikelihood
 end
 
-function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwargs...) where D<:Distribution{Univariate,Continuous}
+function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D,kwargs...) where D<:Distribution{Univariate,Continuous}
     ObservationInterval = d.ObservationInterval
     cL = ObservationInterval.left
     data = d.data
 
-    indexes_NOT_StrictlyLeftTruncated = findall(v -> (!isa)(v,StrictlyLeftTruncatedData) && (!isa)(v,StrictlyLeftTruncatedRightCensoredData), data)
-    if length(indexes_NOT_StrictlyLeftTruncated) != length(data)
-        @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
-    end
 
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     len_prms = length(Yprms)
     ∇ᵏconditionalloglikelihood = (zeros(len_prms), zeros(len_prms,len_prms))
      
-    for i in indexes_NOT_StrictlyLeftTruncated
+    for i in 1:length(data)
         ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .+ ∇ᵏlogp̃y(data[i],FY,ObservationInterval;kwargs...)
         if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
             τ = cL - data[i].install
