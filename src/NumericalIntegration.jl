@@ -1,6 +1,6 @@
 function SimpsonRule(f::Function,I::ClosedInterval{T₁};N::T₂=2^6,kwargs...) where {T₁<:Real, T₂<:Integer} 
     a,b = I.left, I.right
-    J = 0*f(a).^0
+    J = zero(f(a))
     if a == b
         return J
     end
@@ -16,7 +16,7 @@ function TrapezoidalRule(f::Function,I::ClosedInterval{T₁};N::T₂=2^6,kwargs.
     a,b = I.left, I.right
     x = a:(b-a)/(N-1):b
     y = f.(x)
-    J = 0*f(a).^0
+    J = zero(f(a))
     for n in 2:N
         J += y[n-1] + y[n]
     end
@@ -40,7 +40,7 @@ end
 function DESimpsonRule(f::Function,I::ClosedInterval{T};kwargs...) where T<:Real
     a,b = I.left,I.right
     if a == b
-        return 0*f(a).^0
+        return zero(f(a))
     end
     return DoublyExponentialize(f,I;kwargs...) |> v -> SimpsonRule(v...;kwargs...)
 end
@@ -48,7 +48,7 @@ end
 function DETrapezoidalRule(f::Function,I::ClosedInterval{T};kwargs...) where T<:Real
     a,b = I.left,I.right
     if a == b
-        return 0*f(a).^0
+        return zero(f(a))
     end
     return DoublyExponentialize(f,I;kwargs...) |> v -> TrapezoidalRule(v...;kwargs...)
 end
