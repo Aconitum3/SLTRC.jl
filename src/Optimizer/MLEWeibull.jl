@@ -17,14 +17,15 @@ function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_
         x̄ = sum(log.(t).*δ)/d
         m,η = zeros(2)
         m₀ = 1/(log(maximum(t))-x̄)
-        if m₀ == Inf
-           @info "" d x̄ log(maximum(t)) 
-        end
-        
         if logging
             @info "m₀=$(m₀)"
         end
         
+        if in(m₀,[0,Inf]) || isnan(m₀)
+            @warn "0 < m₀ < ∞ is required."
+            return (;solution=Weibull(),status=:unexecutable)
+        end
+
         h(m) = sum(t.^m.*log.(t))/sum(t.^m) - 1/m - x̄
         
         function ∇h(m)
@@ -35,6 +36,10 @@ function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_
         
         for _ in 1:max_itr
             m = m₀ - h(m₀)/∇h(m₀)
+            if in(m,[0,Inf]) || isnan(m)
+                return (;solution=Weibull(),status=:solution_is_diverged)
+            end
+            
             di = abs((m-m₀)/m)
             if  di < ϵ
                 η = (sum(t.^m)/d)^(1/m)
@@ -56,7 +61,7 @@ function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_
     resX = est(t,δ)
     if logging
         @info "MLE of FX: $(resX.solution), $(resX.status)"
-        @info "Estimate params(FX)..."
+        @info "Estimate params(FY)..."
     end
     t = [lifetime_complete;lifetime_rightcensored]
     δ = [ones(length(index_complete));zeros(length(index_rightcensored))]
@@ -65,7 +70,16 @@ function RightCensoredWeibullMLE(dataset::LeftTruncatedRightCensoredDataset;max_
         @info "MLE of FY: $(resY.solution), $(resY.status)"
         @info "=============================================="
     end
-    return (;solution=[resX.solution,resY.solution])
+
+    if resX.status != :converged_local_maximal
+        return (;solution=[resX.solution,resY.solution],status=resX.status)
+    end
+
+    if resY.status != :converged_local_maximal
+        return (;solution=[resX.solution,resY.solution],status=resY.status)
+    end
+
+    return (;solution=[resX.solution,resY.solution],status=:converged_local_maximal)
 end
 
 function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};logging::Bool=false,kwargs...) where T<:Real
@@ -87,34 +101,47 @@ function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibu
     if logging
         @info "initial values" θ_init
     end
-    res = Newton([true,true,true,true],θ -> ∇ᵏloglikelihood(dataset,Weibull(θ[1:2]...),Weibull(θ[3:4]...);kwargs...),θ_init;logging=logging,kwargs...)
-    return (;solution=(Weibull(res.solution[1:2]...),Weibull(res.solution[3:4]...)),status=res.status,solution_path=res.solution_path)
+    
+    try
+        res = Newton([true,true,true,true],θ -> ∇ᵏloglikelihood(dataset,Weibull(θ[1:2]...),Weibull(θ[3:4]...);kwargs...),θ_init;logging=logging,kwargs...)
+        return (;solution=(Weibull(res.solution[1:2]...),Weibull(res.solution[3:4]...)),status=res.status,solution_path=res.solution_path)
+    catch e
+        if e isa DomainError     
+            return (;solution=(Weibull(),Weibull()),status=:solution_is_diverged,solution_path=nothing)
+        else
+            rethrow(e)
+        end
+    end
 end
 
 function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::Weibull{T},FY::Weibull{T};ϵ=1e-4,alt_max_itr=100,logging::Bool=false,kwargs...) where T<:Real
-    θX_init, θX_init = params(FX) |> collect, params(FY) |> collect
+    
+    θX_init, θY_init = params(FX) |> collect, params(FY) |> collect
+    if FX == Weibull() && FY == Weibull()
+        # estimate initial θX,θY
+        
+        index_complete = findall(v -> isa(v,CompleteData),dataset.data)
+        index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
 
-    index_complete = findall(v -> isa(v,CompleteData),dataset.data)
-    index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
-    
-    # estimate initial θX,θY
-    θX = θX_init
-    RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
-    
-    res = RightCensoredWeibullMLE(RightCensoredDataset;logging=logging)
-    θX = params(res.solution[1]) |> collect
-    θY = params(res.solution[2]) |> collect
+        RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
+        
+        res = RightCensoredWeibullMLE(RightCensoredDataset;logging=logging)
+        θX_init = params(res.solution[1]) |> collect
+        θY_init = params(res.solution[2]) |> collect
+    end
     
     if logging
-        @info "initial values" res.solution 
+        @info "initial values" θX_init θY_init 
     end
 
     θX_path = zeros(alt_max_itr+1,2)
     θY_path = zeros(alt_max_itr+1,2)
-    θX_path[1,:] = θX
-    θY_path[1,:] = θY
+    θX_path[1,:] = θX_init
+    θY_path[1,:] = θY_init
     
     # estimate θX, θY alternatively
+    θX = θX_init
+    θY = θY_init
     for i in 2:alt_max_itr+1
         
         resX = Newton([true,true],θ -> ∇ᵏxloglikelihood(dataset,Weibull(θ...),Weibull(θY...);kwargs...),θX;kwargs...)
@@ -174,7 +201,15 @@ function ConditionalMLE(dataset::LeftTruncatedRightCensoredDataset,FY::Weibull;l
         @warn "This Dataset inclues Strictly Left-Truncated Data. Strictly Left-Truncated Data are excluded automatically."
         dataset = LeftTruncatedRightCensoredDataset(dataset.data[index_NOT_StrictlyLeftTruncated], dataset.ObservationInterval)
     end
-      
-    res = Newton([true,true],θ -> ∇ᵏconditionalloglikelihood(dataset,Weibull(θ...);kwargs...),θ_init;logging=logging,kwargs...)
-    return (;solution=(Weibull(res.solution...)),status=res.status,solution_path=res.solution_path)
+     
+    try
+        res = Newton([true,true],θ -> ∇ᵏconditionalloglikelihood(dataset,Weibull(θ...);kwargs...),θ_init;logging=logging,kwargs...)
+        return (;solution=(Weibull(res.solution...)),status=res.status,solution_path=res.solution_path)
+    catch e
+        if e isa DomainError
+            return (;solution=(Weibull()),status=:solution_is_diverged,solution_path=nothing)
+        else
+            rethrow(e)
+        end
+    end
 end
