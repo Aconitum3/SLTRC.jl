@@ -370,7 +370,12 @@ function ∇ᵏxloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
     indexes_NOT_StrictlyLeftTruncatedRightCensored = findall(v -> (!isa)(v,StrictlyLeftTruncatedRightCensoredData),data)
     n_StrictlyLeftTruncatedRightCensored = length(data) - length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
 
-    ∑∇ᵏlogp̃ = n_StrictlyLeftTruncatedRightCensored .* ∇ᵏxlogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
+    len_prms = length(params(FX))
+    ∑∇ᵏlogp̃ = (zeros(len_prms), zeros(len_prms,len_prms))
+    
+    if n_StrictlyLeftTruncatedRightCensored != 0
+        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏxlogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
+    end
 
     for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏxlogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
@@ -387,7 +392,12 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
     indexes_NOT_StrictlyLeftTruncatedRightCensored = findall(v -> (!isa)(v,StrictlyLeftTruncatedRightCensoredData),data)
     n_StrictlyLeftTruncatedRightCensored = length(data) - length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
 
-    ∑∇ᵏlogp̃ = n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
+    len_prms = length(params(FY))
+    ∑∇ᵏlogp̃ = (zeros(len_prms), zeros(len_prms,len_prms))
+    
+    if n_StrictlyLeftTruncatedRightCensored != 0
+        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
+    end
 
     for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏylogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
