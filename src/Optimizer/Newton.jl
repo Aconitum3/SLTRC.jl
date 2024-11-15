@@ -3,10 +3,20 @@ function Newton(∇ᵏf::Function,init::Vector{T₁};max_itr::I=1000,ϵ::T₂=1e
     Θ = Vector{<:Real}[θ]
     for _ in 1:max_itr
         ∇f, ∇²f = ∇ᵏf(θ)
+        
+        if in(true, isnan.(∇f) .|| isinf.(∇f))
+            return (;solution=init, status=:∇f_is_diverged, solution_path=Θ)
+        end
+        if in(true, isnan.(∇²f) .|| isinf.(∇²f))
+            return (;solution=init, status=:∇²f_is_diverged, solution_path=Θ)
+        end
+        
         ∇f_norm = norm(∇f)
+        
         if logging
             @info "∇f: $(∇f .|> v -> round(v,digits=2)), |∇f|: $(round(∇f_norm,digits=5)) det∇²f: $(round(det(∇²f),digits=4))"
         end
+        
         if ∇f_norm < ϵ
             if logging
                 @info "converged"
@@ -19,15 +29,11 @@ function Newton(∇ᵏf::Function,init::Vector{T₁};max_itr::I=1000,ϵ::T₂=1e
             end
         end
         if abs(det(∇²f)) < ϵ
-            return (;solution=θ, status=:det∇²f_is_zero, solution_path=Θ)
+            return (;solution=init, status=:det∇²f_is_zero, solution_path=Θ)
         end
-        if in(true, isnan.(∇f))
-            return (;solution=θ, status=:∇f_is_diverged, solution_path=Θ)
-        end
-        if in(true, isnan.(∇²f))
-            return (;solution=θ, status=:∇²f_is_diverged, solution_path=Θ)
-        end
+        
         θ -= α * (∇²f \ ∇f)
+        
         if return_solution_path
             push!(Θ,θ)
         end
