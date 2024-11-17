@@ -385,7 +385,7 @@ function ∇ᵏxloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
     return ∇ᵏloglikelihood
 end
 
-function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
+function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;parallel=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
     ObservationInterval = d.ObservationInterval
     data = d.data
     
@@ -399,10 +399,21 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
     end
 
-    for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
-        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏylogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
-    end
+    if parallel
+        len_NOT_SLTRC = length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
+        ∇logp̃ = zeros(len_prms,len_NOT_SLTRC)
+        ∇²logp̃ = zeros(len_prms,len_prms,len_NOT_SLTRC) 
+        
+        Threads.@threads for i in 1:len_NOT_SLTRC
+            ∇logp̃[:,i], ∇²logp̃[:,:,i] = ∇ᵏylogp̃(data[indexes_NOT_StrictlyLeftTruncatedRightCensored[i]],FX,FY,ObservationInterval)
+        end
 
+        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ( dropdims(sum(∇logp̃,dims=2),dims=2),dropdims(sum(∇²logp̃,dims=3),dims=3) )
+    else
+        for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
+            ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏylogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
+        end
+    end
     ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
     return ∇ᵏloglikelihood
 end
@@ -424,7 +435,7 @@ function conditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwa
     return conditionalloglikelihood
 end
 
-function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D,kwargs...) where D<:Distribution{Univariate,Continuous}
+function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;parallel=false,kwargs...) where D<:Distribution{Univariate,Continuous}
     ObservationInterval = d.ObservationInterval
     cL = ObservationInterval.left
     data = d.data
@@ -434,12 +445,27 @@ function ∇ᵏconditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY:
     Yprms = params(FY) |> collect
     len_prms = length(Yprms)
     ∇ᵏconditionalloglikelihood = (zeros(len_prms), zeros(len_prms,len_prms))
-     
-    for i in 1:length(data)
-        ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .+ ∇ᵏlogp̃y(data[i],FY,ObservationInterval;kwargs...)
-        if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
-            τ = cL - data[i].install
-            ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .- ( gradient(θ -> logccdf(FYname(θ...), τ), Yprms)[1], hessian(θ -> logccdf(FYname(θ...), τ), Yprms) )
+    
+    if parallel
+        ∇conditionallogli = zeros(len_prms,length(data))
+        ∇²conditionallogli = zeros(len_prms,len_prms,length(data))
+        Threads.@threads for i in 1:length(data)
+            ∇conditionallogli[:,i], ∇²conditionallogli[:,:,i] = ∇ᵏlogp̃y(data[i],FY,ObservationInterval;kwargs...)
+            if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
+                τ = cL - data[i].install
+                ∇conditionallogli[:,i] -= gradient(θ -> logccdf(FYname(θ...), τ), Yprms)[1]
+                ∇²conditionallogli[:,:,i] -= hessian(θ -> logccdf(FYname(θ...), τ), Yprms)
+            end
+        end
+
+        ∇ᵏconditionalloglikelihood = ( dropdims(sum(∇conditionallogli,dims=2),dims=2), dropdims(sum(∇²conditionallogli,dims=3),dims=3) )
+    else          
+        for i in 1:length(data)
+            ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .+ ∇ᵏlogp̃y(data[i],FY,ObservationInterval;kwargs...)
+            if isa(data[i], WeaklyLeftTruncatedData) || isa(data[i], WeaklyLeftTruncatedRightCensoredData)
+                τ = cL - data[i].install
+                ∇ᵏconditionalloglikelihood = ∇ᵏconditionalloglikelihood .- ( gradient(θ -> logccdf(FYname(θ...), τ), Yprms)[1], hessian(θ -> logccdf(FYname(θ...), τ), Yprms) )
+            end
         end
     end
 
