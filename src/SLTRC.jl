@@ -18,6 +18,7 @@ include("Toolbox.jl")
 include("Optimizer/Newton.jl")
 include("Optimizer/MLEBase.jl")
 include("Optimizer/MLEWeibull.jl")
+include("Optimizer/MLEExponential.jl")
 include("Sampler.jl")
 
 export Interval
@@ -28,6 +29,6 @@ export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikel
 export conditionalloglikelihood, ∇ᵏconditionalloglikelihood
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
-export Newton, MLE, MLE_Alternative, ConditionalMLE, RightCensoredWeibullMLE
+export Newton, MLE, MLE_Alternative, ConditionalMLE, RightCensoredWeibullMLE, RightCensoredExponentialMLE
 
 end
