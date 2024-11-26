@@ -381,8 +381,13 @@ function ∇ᵏxloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏxlogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
     end
 
-    ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏxlogC(FX,FY,ObservationInterval;kwargs...)
-    return ∇ᵏloglikelihood
+    if len_prms > 1
+        ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏxlogC(FX,FY,ObservationInterval;kwargs...)
+        return ∇ᵏloglikelihood
+    else
+        ∇ᵏloglikelihood = (∑∇ᵏlogp̃[1][1], ∑∇ᵏlogp̃[2][1,1]) .- length(data) .* ∇ᵏxlogC(FX,FY,ObservationInterval;kwargs...)
+        return ∇ᵏloglikelihood
+    end
 end
 
 function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;parallel=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
@@ -398,7 +403,6 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
     if n_StrictlyLeftTruncatedRightCensored != 0
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
     end
-
     if parallel
         len_NOT_SLTRC = length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
         ∇logp̃ = zeros(len_prms,len_NOT_SLTRC)
@@ -414,8 +418,14 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
             ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏylogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
         end
     end
-    ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
-    return ∇ᵏloglikelihood
+    
+    if len_prms > 1
+        ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
+        return ∇ᵏloglikelihood
+    else
+        ∇ᵏloglikelihood = (∑∇ᵏlogp̃[1][1], ∑∇ᵏlogp̃[2][1,1]) .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
+        return ∇ᵏloglikelihood
+    end
 end
 
 function conditionalloglikelihood(d::LeftTruncatedRightCensoredDataset,FY::D;kwargs...) where D<:Distribution{Univariate,Continuous}
