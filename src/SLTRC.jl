@@ -4,6 +4,7 @@ using Distributions
 using IntervalSets
 using LinearAlgebra
 using Zygote
+using SpecialFunctions
 
 Fname(F) = typeof(F) |> nameof |> sym -> eval(Core.eval(Distributions,sym))
 
@@ -14,6 +15,7 @@ const Default_NumericalIntegration = DETrapezoidalRule
 include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
+include("Likelihood/ImproperUniform.jl")
 include("Toolbox.jl")
 include("Optimizer/Newton.jl")
 include("Optimizer/MLEBase.jl")
@@ -26,6 +28,7 @@ export CompleteData, RightCensoredData, StrictlyLeftTruncatedData, WeaklyLeftTru
 export C, logC, ∇C, ∇²C, ∇logC, ∇ᵏlogC, ∇xC, ∇yC, ∇²xC, ∇²yC, ∇xlogC, ∇ylogC, ∇ᵏxlogC, ∇ᵏylogC
 export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
 export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
+export ImproperUniform
 export conditionalloglikelihood, ∇ᵏconditionalloglikelihood
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling

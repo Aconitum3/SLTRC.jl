@@ -7,7 +7,7 @@ function sampling(n::I,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T})
     while length(output_weakly) < n
         X, Y= rand(FX), rand(FY)
         
-        if Interval(X,X+Y) ⊆ Interval(0,cL) || Interval(X,X+Y) ⊆ Interval(cR,Inf)
+        if Interval(X,X+Y) ⊆ Interval(-Inf,cL) || Interval(X,X+Y) ⊆ Interval(cR,Inf)
             continue
         else
             if Interval(X,X+Y) ⊆ ObservationInterval
@@ -16,7 +16,7 @@ function sampling(n::I,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T})
             elseif X ∈ ObservationInterval && X+Y ∈ Interval(cR,Inf)
                 push!(output_weakly,RightCensoredData(X))
                 push!(output_strictly,RightCensoredData(X))
-            elseif X+Y ∈ ObservationInterval && X ∈ Interval(0,cL)
+            elseif X+Y ∈ ObservationInterval && X ∈ Interval(-Inf,cL)
                 push!(output_weakly,WeaklyLeftTruncatedData(X,X+Y))
                 push!(output_strictly,StrictlyLeftTruncatedData(X+Y))
             else # ObservationInterval ⊆ Interval(X,X+Y)

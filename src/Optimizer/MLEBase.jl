@@ -8,7 +8,7 @@ function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;loggin
     return (;solution=(FXname(res.solution[1:len_Xprms]...),FYname(res.solution[end-len_Yprms+1:end]...)),status=res.status,solution_path=res.solution_path)
 end
 
-function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;ϵ=1e-4,alt_max_itr=100,logging::Bool=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
+function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY::D₂;ϵ=1e-4,alt_max_itr=100,logging::Bool=false,fix_x=false,kwargs...) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous}}
     Bool_X_positive_constraints = positive_constraint(FX)
     Bool_Y_positive_constraints = positive_constraint(FY)
     θX_init, θY_init = params(FX) |> collect, params(FY) |> collect
@@ -19,13 +19,19 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY:
     index_complete = findall(v -> isa(v,CompleteData),dataset.data)
     index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 
     
-    # estimate initial θX,θY
     RightCensoredDataset = LeftTruncatedRightCensoredDataset(dataset.data[[index_complete;index_rightcensored]],dataset.ObservationInterval)
-    res = Newton(Bool_X_positive_constraints,θ -> ∇ᵏxloglikelihood(RightCensoredDataset,FXname(θ...),FY;kwargs...),θX_init;kwargs...)
-    θX = res.solution
-    if res.status != :converged_local_maximal
-        return (;solution=(FXname(θX...),FY), status=res.status)
-    end
+    
+    # estimate initial θX,θY
+    θX = nothing
+    if fix_x
+        θX = θX_init
+    else
+        res = Newton(Bool_X_positive_constraints,θ -> ∇ᵏxloglikelihood(RightCensoredDataset,FXname(θ...),FY;kwargs...),θX_init;kwargs...)
+        θX = res.solution
+        if res.status != :converged_local_maximal
+            return (;solution=(FXname(θX...),FY), status=res.status)
+        end
+    end 
     
     res = Newton(Bool_Y_positive_constraints,θ -> ∇ᵏyloglikelihood(RightCensoredDataset,FXname(θX...),FYname(θ...);kwargs...),θY_init;kwargs...)
     θY = res.solution
@@ -46,13 +52,22 @@ function MLE_Alternative(dataset::LeftTruncatedRightCensoredDataset,FX::D₁,FY:
     # estimate θX, θY alternatively
     for i in 2:alt_max_itr+1
         
-        resX = Newton(Bool_X_positive_constraints,θ -> ∇ᵏxloglikelihood(dataset,FXname(θ...),FYname(θY...);kwargs...),θX;kwargs...)
-        θX = resX.solution
-        resY = Newton(Bool_X_positive_constraints,θ -> ∇ᵏxloglikelihood(dataset,FXname(θX...),FYname(θ...);kwargs...),θY;kwargs...)
+        if !fix_x
+            resX = Newton(Bool_X_positive_constraints,θ -> ∇ᵏxloglikelihood(dataset,FXname(θ...),FYname(θY...);kwargs...),θX;kwargs...)
+            θX = resX.solution
+        end
+
+        resY = Newton(Bool_X_positive_constraints,θ -> ∇ᵏyloglikelihood(dataset,FXname(θX...),FYname(θ...);kwargs...),θY;kwargs...)
         θY = resY.solution
 
         if norm(θX_path[i-1,:] - θX) < ϵ && norm(θY_path[i-1,:] - θY) < ϵ
-            hess = ∇ᵏloglikelihood(dataset,FXname(θX...),FYname(θY...))[2]
+            hess = nothing 
+            if fix_x
+                hess = ∇ᵏyloglikelihood(dataset,FXname(θX...),FYname(θY...))[2]
+            else
+                hess = ∇ᵏloglikelihood(dataset,FXname(θX...),FYname(θY...))[2]
+            end
+            
             if in(false, eigvals(hess) .< -ϵ)
                 return (;solution=(FXname(θX...),FYname(θY...)),status=:converged_suddle_point,solution_path=[θX_path[1:i] θY_path[1:i]])
             else
