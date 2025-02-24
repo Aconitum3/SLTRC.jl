@@ -3,7 +3,6 @@ function Newton(∇ᵏf::Function,init::Vector{T₁};max_itr::I=1000,ϵ::T₂=1e
     Θ = Vector{<:Real}[θ]
     for _ in 1:max_itr
         ∇f, ∇²f = ∇ᵏf(θ)
-        
         if in(true, isnan.(∇f) .|| isinf.(∇f))
             return (;solution=init, status=:∇f_is_diverged, solution_path=Θ)
         end

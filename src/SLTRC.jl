@@ -15,6 +15,7 @@ const Default_NumericalIntegration = DETrapezoidalRule
 include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
+include("Likelihood/Uniform.jl")
 include("Likelihood/ImproperUniform.jl")
 include("FisherInformation.jl")
 include("Toolbox.jl")
@@ -22,6 +23,7 @@ include("Optimizer/Newton.jl")
 include("Optimizer/MLEBase.jl")
 include("Optimizer/MLEWeibull.jl")
 include("Optimizer/MLEExponential.jl")
+include("Optimizer/MLEUniform.jl")
 include("Sampler.jl")
 
 export Interval
