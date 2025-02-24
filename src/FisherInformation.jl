@@ -145,10 +145,14 @@ function FisherInformationMC(K,L,FY::D;N=1000,
         end
     end
     val_ltrc = begin
-        p̃_val = NumericalIntegration(v -> ccdf(FY,v),Interval(L,K+L))
-        ∇logp̃ = (NumericalIntegration(v -> gradient(θ -> ccdf(FYname(θ...),v),Yprms)[1],Interval(L,K+L))) / p̃_val
-        
-        NumericalIntegration(v -> hessian(θ -> ccdf(FYname(θ...),v),Yprms),Interval(L,K+L)) / p̃_val - ∇logp̃*∇logp̃'
+        if n_LTRC == 0
+            zeros(m,m)
+        else
+            p̃_val = NumericalIntegration(v -> ccdf(FY,v),Interval(L,K+L))
+            ∇logp̃ = (NumericalIntegration(v -> gradient(θ -> ccdf(FYname(θ...),v),Yprms)[1],Interval(L,K+L))) / p̃_val
+            
+            NumericalIntegration(v -> hessian(θ -> ccdf(FYname(θ...),v),Yprms),Interval(L,K+L)) / p̃_val - ∇logp̃*∇logp̃'
+        end
     end
     val_ltrc_approx = begin
         p̃_val = mean(FY) - NumericalIntegration(v -> ccdf(FY,v),Interval(0.0,L))
