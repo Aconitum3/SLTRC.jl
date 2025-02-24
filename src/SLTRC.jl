@@ -3,8 +3,8 @@ module SLTRC
 using Distributions
 using IntervalSets
 using LinearAlgebra
-using Zygote
 using SpecialFunctions
+using Zygote
 
 Fname(F) = typeof(F) |> nameof |> sym -> eval(Core.eval(Distributions,sym))
 
@@ -16,6 +16,7 @@ include("Struct.jl")
 include("Likelihood/Common.jl")
 include("Likelihood/Exponential.jl")
 include("Likelihood/ImproperUniform.jl")
+include("FisherInformation.jl")
 include("Toolbox.jl")
 include("Optimizer/Newton.jl")
 include("Optimizer/MLEBase.jl")
@@ -30,6 +31,7 @@ export p̃, logp̃, ∇ᵏlogp̃, ∇ᵏxlogp̃, ∇ᵏylogp̃
 export loglikelihood, ∇ᵏloglikelihood, ∇ᵏxloglikelihood, ∇ᵏyloglikelihood
 export ImproperUniform
 export conditionalloglikelihood, ∇ᵏconditionalloglikelihood
+export FisherInformation, FisherInformation_CLM, FisherInformation_Allison, FisherInformationMC
 export SimpsonRule, DESimpsonRule, TrapezoidalRule, DETrapezoidalRule
 export ratio, sampling
 export Newton, MLE, MLE_Alternative, ConditionalMLE, RightCensoredWeibullMLE, RightCensoredExponentialMLE

@@ -13,7 +13,7 @@ end
 
 ∇C(FX::ImproperUniform,FY::Exponential,ObservationInterval::ClosedInterval{T}) where {T<:Real} = [1.0]
 ∇²C(FX::ImproperUniform,FY::Exponential,ObservationInterval::ClosedInterval{T}) where {T<:Real} = [0.0;;]
-
+#==
 function ∇C(FX::ImproperUniform,FY::Weibull,ObservationInterval::ClosedInterval{T}) where {T<:Real}
     m,η = Distributions.params(FY)
     g = gamma(1.0+1/m)
@@ -29,6 +29,19 @@ function ∇²C(FX::ImproperUniform,FY::Weibull,ObservationInterval::ClosedInter
     ele12 = g*dig*(-1/m^2)
     return [ele11 ele12; 
             ele12 0.0]
+end
+==#
+
+function ∇C(FX::ImproperUniform,FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous}, T<:Real}
+    Yprms = Distributions.params(FY) |> collect
+    FY = Fname(FY)
+    return gradient(θ -> mean(FY(θ...)), Yprms)[1]
+end
+
+function ∇²C(FX::ImproperUniform,FY::D,ObservationInterval::ClosedInterval{T}) where {D<:Distribution{Univariate,Continuous}, T<:Real}
+    Yprms = Distributions.params(FY) |> collect
+    FY = Fname(FY)
+    return hessian(θ -> mean(FY(θ...)), Yprms)
 end
 
 function ∇ᵏylogC(FX::ImproperUniform,FY::D,ObservationInterval::ClosedInterval{T};kwargs...) where {D<:Distribution{Univariate,Continuous},T<:Real}
@@ -54,7 +67,7 @@ function logp̃(d::StrictlyLeftTruncatedData,FX::ImproperUniform,FY::D,Observati
 end
 
 function logp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::ImproperUniform,FY::D,ObservationInterval::ClosedInterval{T};NumericalIntegration::Function=Default_NumericalIntegration) where {D<:Distribution{Univariate,Continuous}, T<:Real}
-    return mean(FY) - NumericalIntegration(v -> ccdf(FY,v),Interval(0,L)) |> log
+    return mean(FY) - NumericalIntegration(v -> ccdf(FY,v),Interval(0.0,L)) |> log
 end
 
 function ∇ᵏylogp̃(d::StrictlyLeftTruncatedData,FX::ImproperUniform,FY::D,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D<:Distribution{Univariate,Continuous},T<:Real}
@@ -71,51 +84,12 @@ function ∇ᵏylogp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::ImproperUni
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     
-    p̃_val = mean(FY) - NumericalIntegration(v -> ccdf(FY,v))
-    ∇logp̃ = (gradient(θ -> mean(FYname(θ...)))[1] - NumericalIntegration(v -> gradient(θ -> cdf(FYname(θ...),v),Yprms)[1],Interval(0,L))) / p̃_val
-    ∇²logp̃ = (hessian(θ -> mean(FYname(θ...))) - NumericalIntegration(v -> hessian(θ -> cdf(FYname(θ...),cR-v),Yprms),Interval(0.0,L))) / p̃_val - ∇logp̃*∇logp̃'
+    p̃_val = mean(FY) - NumericalIntegration(v -> ccdf(FY,v),Interval(0.0,L))
+    ∇logp̃ = (gradient(θ -> mean(FYname(θ...)),Yprms)[1] - NumericalIntegration(v -> gradient(θ -> ccdf(FYname(θ...),v),Yprms)[1],Interval(0.0,L))) / p̃_val
+    ∇²logp̃ = (hessian(θ -> mean(FYname(θ...)),Yprms)    - NumericalIntegration(v -> hessian(θ -> ccdf(FYname(θ...),v),Yprms),Interval(0.0,L))) / p̃_val - ∇logp̃*∇logp̃'
     return ∇logp̃, ∇²logp̃
 end
 
-#==
-function ∇ᵏloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::ImproperUniform,FY::D;parallel=false,kwargs...) where {D<:Distribution{Univariate,Continuous}}
-    ObservationInterval = d.ObservationInterval
-    data = d.data
-    
-    indexes_NOT_StrictlyLeftTruncatedRightCensored = findall(v -> (!isa)(v,StrictlyLeftTruncatedRightCensoredData),data)
-    n_StrictlyLeftTruncatedRightCensored = length(data) - length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
-
-    len_prms = length(params(FY))
-    ∑∇ᵏlogp̃ = (zeros(len_prms), zeros(len_prms,len_prms))
-    
-    if n_StrictlyLeftTruncatedRightCensored != 0
-        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
-    end
-    if parallel
-        len_NOT_SLTRC = length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
-        ∇logp̃ = zeros(len_prms,len_NOT_SLTRC)
-        ∇²logp̃ = zeros(len_prms,len_prms,len_NOT_SLTRC) 
-        
-        Threads.@threads for i in 1:len_NOT_SLTRC
-            ∇logp̃[:,i], ∇²logp̃[:,:,i] = ∇ᵏylogp̃(data[indexes_NOT_StrictlyLeftTruncatedRightCensored[i]],FX,FY,ObservationInterval)
-        end
-
-        ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ( dropdims(sum(∇logp̃,dims=2),dims=2),dropdims(sum(∇²logp̃,dims=3),dims=3) )
-    else
-        for i in indexes_NOT_StrictlyLeftTruncatedRightCensored
-            ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ ∇ᵏylogp̃(data[i],FX,FY,ObservationInterval;kwargs...)
-        end
-    end
-    
-    if len_prms > 1
-        ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
-        return ∇ᵏloglikelihood
-    else
-        ∇ᵏloglikelihood = (∑∇ᵏlogp̃[1], ∑∇ᵏlogp̃[2]) .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
-        return ∇ᵏloglikelihood
-    end
-end
-==#
 function ∇ᵏloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::ImproperUniform,FY::D;parallel=false,kwargs...) where {D<:Distribution{Univariate,Continuous}}
     return ∇ᵏyloglikelihood(d,FX,FY;parallel=parallel,kwargs...)
 end

@@ -397,15 +397,15 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
     indexes_NOT_StrictlyLeftTruncatedRightCensored = findall(v -> (!isa)(v,StrictlyLeftTruncatedRightCensoredData),data)
     n_StrictlyLeftTruncatedRightCensored = length(data) - length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
 
-    @info "hello"
+    #@info "hello"
     len_prms = length(params(FY))
     ∑∇ᵏlogp̃ = (zeros(len_prms), zeros(len_prms,len_prms))
     
-    @info "hello"
+    #@info "hello"
     if n_StrictlyLeftTruncatedRightCensored != 0
         ∑∇ᵏlogp̃ = ∑∇ᵏlogp̃ .+ n_StrictlyLeftTruncatedRightCensored .* ∇ᵏylogp̃(StrictlyLeftTruncatedRightCensoredData(),FX,FY,ObservationInterval;kwargs...)
     end
-    @info "hello"
+    #@info "hello"
     if parallel
         len_NOT_SLTRC = length(indexes_NOT_StrictlyLeftTruncatedRightCensored)
         ∇logp̃ = zeros(len_prms,len_NOT_SLTRC)
@@ -422,13 +422,13 @@ function ∇ᵏyloglikelihood(d::LeftTruncatedRightCensoredDataset,FX::D₁,FY::
         end
     end
     
-    @info "hello"
+    #@info "hello"
     if len_prms > 1
-    @info "helloA"
+    #@info "helloA"
         ∇ᵏloglikelihood = ∑∇ᵏlogp̃ .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
         return ∇ᵏloglikelihood
     else
-    @info "helloB"
+    #@info "helloB"
         ∇ᵏloglikelihood = (∑∇ᵏlogp̃[1], ∑∇ᵏlogp̃[2]) .- length(data) .* ∇ᵏylogC(FX,FY,ObservationInterval;kwargs...)
         return ∇ᵏloglikelihood
     end
