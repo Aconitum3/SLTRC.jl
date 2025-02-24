@@ -118,13 +118,21 @@ function FisherInformationMC(K,L,FY::D;N=1000,
     for i in 1:N
         d = dataset.WeaklyLeftTruncatedRightCensoredDataset.data[i]
         if isa(d, CompleteData)
-            val = hessian(θ -> logpdf(FYname(θ...),d.failure - d.install),Yprms)
+            lifetime = d.failure - d.install
+            if lifetime < 1e-100
+                lifetime = 1e-100
+            end
+            val = hessian(θ -> logpdf(FYname(θ...),lifetime),Yprms)
             I_Base += val
         elseif isa(d, RightCensoredData)
             val = hessian(θ -> logccdf(FYname(θ...),L-d.install),Yprms)
             I_Base += val
         elseif isa(d, WeaklyLeftTruncatedData)
-            val = hessian(θ -> logpdf(FYname(θ...),d.failure - d.install),Yprms)
+            lifetime = d.failure - d.install
+            if lifetime < 1e-100
+                lifetime = 1e-100
+            end
+            val = hessian(θ -> logpdf(FYname(θ...),lifetime),Yprms)
             I_C += hessian(θ -> log(ccdf(FYname(θ...),d.failure) - ccdf(FYname(θ...),d.failure + K)),Yprms)
             I_C_approx += hessian(θ -> logccdf(FYname(θ...),d.failure),Yprms)
             I_UC += val
