@@ -1,7 +1,7 @@
 function MLE(dataset::LeftTruncatedRightCensoredDataset,FX::Union{ImproperUniform,Uniform},FY::D;logging::Bool=false,kwargs...) where {D<:Distribution{Univariate,Continuous}}
-    Bool_positive_constraints = SLTRC.positive_constraint(FY)
+    Bool_positive_constraints = positive_constraint(FY)
     θ_init = Distributions.params(FY) |> collect
-    FYname = SLTRC.Fname(FY)
+    FYname = Fname(FY)
     if logging
         @info "initial values" θ_init
     end

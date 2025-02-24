@@ -1,4 +1,4 @@
-function RightCensoredExponentialMLE(dataset::LeftTruncatedRightCensoredDataset) where {I<:Integer, T<:Real}
+function RightCensoredExponentialMLE(dataset::LeftTruncatedRightCensoredDataset)
     cR = dataset.ObservationInterval.right
     index_complete = findall(v -> isa(v,CompleteData),dataset.data)
     index_rightcensored = findall(v -> isa(v,RightCensoredData),dataset.data) 

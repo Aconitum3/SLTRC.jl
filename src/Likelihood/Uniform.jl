@@ -54,7 +54,7 @@ function p̃(d::StrictlyLeftTruncatedRightCensoredData,FX::Uniform,FY::D,Observa
     return NumericalIntegration(v -> ccdf(FY,cR-v),Interval(a,cL))
 end
 
-function ∇ᵏylogp̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏylogp̃(d::StrictlyLeftTruncatedData,FX::Uniform,FY::D,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D<:Distribution{Univariate,Continuous},T<:Real}
     FYname = Fname(FY)
     Yprms = params(FY) |> collect
     
@@ -63,7 +63,7 @@ function ∇ᵏylogp̃(d::StrictlyLeftTruncatedData,FX::D₁,FY::D₂,Observatio
     return ∇logp̃, ∇²logp̃
 end
 
-function ∇ᵏylogp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::D₁,FY::D₂,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D₁<:Distribution{Univariate,Continuous},D₂<:Distribution{Univariate,Continuous},T<:Real}
+function ∇ᵏylogp̃(d::StrictlyLeftTruncatedRightCensoredData,FX::Uniform,FY::D,ObservationInterval::ClosedInterval{T};NumericalIntegration=Default_NumericalIntegration) where {D<:Distribution{Univariate,Continuous},T<:Real}
     cL, cR = ObservationInterval.left, ObservationInterval.right
     a,_ = params(FX)
     FYname = Fname(FY)
